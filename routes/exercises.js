@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Exercise = require('../models/Exercise');
 const User = require('../models/User');
 const errorResObj = require('../util/routerHelp');
@@ -99,6 +100,44 @@ router.get('/:id', (req, res) => {
             console.log(err);
             res.status(400).json(errorResObj(400, err.message));
         });
+});
+
+// Update one
+router.put('/:id', (req, res) => {
+    const { username, description, duration, date } = req.body;
+
+    if (!username || !description || !duration || !date) {
+        res.status(400).json(errorResObj(400, "Invalid request body."));
+        return;
+    }
+
+    User.findOne({username})
+        .then(user => {
+            if (!user) {
+                res.status(404).json(errorResObj(404, "User not found."));
+                return;
+            }
+
+            const newExercise = {
+                description,
+                duration,
+                date,
+                user: mongoose.Types.ObjectId(user._id)
+            }
+
+            Exercise.replaceOne({ _id: req.params.id }, newExercise)
+                .then(response => {
+                    res.json(response);
+                })
+                .catch(err => {
+                    console.log(err.message);
+                    res.status(500).json(errorResObj(500, err.message))
+                });
+        })
+        .catch(err => {
+            console.log(err.message);
+            res.status(400).json(errorResObj(400, err.message));
+        });  
 });
 
 // Delete one
