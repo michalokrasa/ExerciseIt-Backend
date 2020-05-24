@@ -12,30 +12,35 @@ router.post('/', async (req, res) => {
     let fetchedId;
 
     if (req.body.userId) {
+        fetchedId = req.body.userId;
         try {
-            const { username } = await User.findById(userId);
+            const { username } = await User.findById(fetchedId);
             fetchedName = username;
         } catch (err) {
             res.status(404).json(errorResObj(404, "Unknown _id."));
-            return
+            return;
         }
     }
     else if (req.body.username) {
+        fetchedName = req.body.username;
         try {
-            const { _id } = await User.findOne({username: req.body.username});
+            const { _id } = await User.findOne({username: fetchedName});
             fetchedId = _id;
         } catch (err) {
             res.status(404).json(errorResObj(404, "Unknown username."));
-            return
+            return;
         }
     }
     else {
         res.status(400).json(errorResObj(400, "Bad request."));
-        return
+        return;
     }
 
+    console.log(fetchedId);
+    
+
     const exercise = new Exercise({
-        userId: fetchedId,
+        user: fetchedId,
         description,
         duration,
         date
@@ -52,17 +57,12 @@ router.post('/', async (req, res) => {
         }
         
         res.status(400).json(errorResObj(400, errorMsg));
-        return
+        return;
     }
 
     exercise.save()
     .then(result => {
-        res.status(201).json({ 
-            username: fetchedName, 
-            description, duration, 
-            _id: fetchedId, 
-            date: result.date.toDateString() 
-        });
+        res.status(201).json(result);
         console.log(result);
     })
     .catch(err => {
@@ -71,16 +71,39 @@ router.post('/', async (req, res) => {
     });
 });
 
+// Get all exercises
 router.get('/', (req, res) => {
     Exercise.find()
+        .populate('user')
         .then(exercises => {
-            User.find()
-                .then(users => {
-                    
-                })
-                .catch(err => console.log(err));
+            res.json(exercises);
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err);
+            res.status(500).json(errorResObj(500, "Error retriving exercises from database."));
+        });
+});
+
+// Delete one
+router.delete('/', (req, res) => {
+    const id = req.body.id;
+
+    if (!id) {
+        res.status(400).json(errorResObj(400, "No id specified in the request body."));
+        return;
+    }
+
+    Exercise.findByIdAndDelete(id)
+        .then(deleted => {
+            if (!deleted) {
+                res.status(404).json(errorResObj(404, "Exercise not found."));
+                return;
+            }
+            res.json(deleted);
+        })
+        .catch(err => {
+            res.status(400).json(errorResObj(400, err.message));
+        });
 });
 
 // Get logs
@@ -89,7 +112,7 @@ router.get('/log', (req, res) => {
 
     if (!userId) {
         res.status(400).json(errorResObj(400, "UserId unspecified."));
-        return
+        return;
     }
 
     from = new Date(from);
@@ -120,8 +143,8 @@ router.get('/log', (req, res) => {
                     description: e.description, 
                     duration: e.duration,
                     date: dateString
-                }
-            })
+                };
+            });
             
             if (limit) {
                 user.log = user.log.slice(0, limit);
