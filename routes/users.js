@@ -37,6 +37,17 @@ router.get('/', (req, res) => {
         });
 });
 
+// Get one user
+router.get('/:id', (req, res) => {
+    User.findById(req.params.id)
+        .then(users => {
+            res.json(users);
+        })
+        .catch(err => {
+            res.status(404).json(404, err.message);
+        });
+});
+
 // Delete user by id or name
 router.delete('/', (req, res) => {
     const { id, username } = req.body;
