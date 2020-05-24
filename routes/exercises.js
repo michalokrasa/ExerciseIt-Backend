@@ -1,47 +1,41 @@
 const express = require('express');
-const mognoose = require('mongoose');
 const Exercise = require('../models/Exercise');
 const User = require('../models/User');
+const errorResObj = require('../util/routerHelp');
 
 const router = express.Router();
 
-const USERNAME_TAKEN = 11000;
-
-// Add new user
-router.post('/new-user', async (req, res) => {
-    const user = new User({
-        username: req.body.username
-    });
-
-    user.save()
-    .then(({ username, _id }) => {
-        res.json({ username, _id });
-    })
-    .catch(err => {
-        if (err.code === USERNAME_TAKEN) {
-            res.send('username already taken');
-        }
-        else {
-            res.json({ message: err });
-        }
-    });
-});
-
 // Add new exercise
-router.post('/add', async (req, res, next) => {
-    const { userId, description, duration, date } = req.body;
+router.post('/', async (req, res) => {
+    const { description, duration, date } = req.body;
     let fetchedName;
+    let fetchedId;
 
-    try {
-        const { username } = await User.findById(userId);
-        fetchedName = username;
-    } catch (err) {
-        res.send('unknown _id');
+    if (req.body.userId) {
+        try {
+            const { username } = await User.findById(userId);
+            fetchedName = username;
+        } catch (err) {
+            res.status(404).json(errorResObj(404, "Unknown _id."));
+            return
+        }
+    }
+    else if (req.body.username) {
+        try {
+            const { _id } = await User.findOne({username: req.body.username});
+            fetchedId = _id;
+        } catch (err) {
+            res.status(404).json(errorResObj(404, "Unknown username."));
+            return
+        }
+    }
+    else {
+        res.status(400).json(errorResObj(400, "Bad request."));
         return
     }
 
     const exercise = new Exercise({
-        userId,
+        userId: fetchedId,
         description,
         duration,
         date
@@ -57,35 +51,36 @@ router.post('/add', async (req, res, next) => {
             errorMsg += errors[key] + '\n';
         }
         
-        res.send(errorMsg);
+        res.status(400).json(errorResObj(400, errorMsg));
         return
     }
 
     exercise.save()
     .then(result => {
-        res.json({ 
+        res.status(201).json({ 
             username: fetchedName, 
             description, duration, 
-            _id: userId, 
+            _id: fetchedId, 
             date: result.date.toDateString() 
         });
         console.log(result);
     })
     .catch(err => {
         console.log(err);
-        res.send(err);
+        res.status(500).json(err);
     });
 });
 
-// Get all the users
-router.get('/users', (req, res) => {
-    User.find()
-    .then(users => {
-        res.json(users);
-    }) 
-    .catch(err => {
-        res.json(err);
-    });
+router.get('/', (req, res) => {
+    Exercise.find()
+        .then(exercises => {
+            User.find()
+                .then(users => {
+                    
+                })
+                .catch(err => console.log(err));
+        })
+        .catch(err => console.log(err));
 });
 
 // Get logs
@@ -93,7 +88,7 @@ router.get('/log', (req, res) => {
     let { userId, from, to, limit } = req.query;
 
     if (!userId) {
-        res.send('unknown userId');
+        res.status(400).json(errorResObj(400, "UserId unspecified."));
         return
     }
 
@@ -103,8 +98,6 @@ router.get('/log', (req, res) => {
     if (limit && limit < 1) {
         limit = undefined;
     }
-    
-
 
     User.findById(userId).lean()
     .then(user => {
@@ -139,12 +132,12 @@ router.get('/log', (req, res) => {
         })
         .catch(err => {
             console.log(err);
-            res.send(err.message);
+            res.status(404).json(err);
         });
     })
     .catch(err => {
         console.log(err);
-        res.send('unknown userId');
+        res.status(404).json(errorResObj(404, "Unknown userId."));
     });
 });
 
