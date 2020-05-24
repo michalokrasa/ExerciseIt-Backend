@@ -33,18 +33,22 @@ router.get('/', (req, res) => {
             res.json(users);
         })
         .catch(err => {
-            res.status(404).json(err);
+            res.status(400).json(err.message);
         });
 });
 
 // Get one user
 router.get('/:id', (req, res) => {
     User.findById(req.params.id)
-        .then(users => {
-            res.json(users);
+        .then(user => {
+            if (!user) {
+                res.status(404).json(errorResObj(404, "User not found."));
+                return;
+            }
+            res.json(user);
         })
         .catch(err => {
-            res.status(404).json(404, err.message);
+            res.status(400).json(400, err.message);
         });
 });
 
@@ -82,7 +86,7 @@ router.patch('/:id', (req, res) => {
     User.findByIdAndUpdate(req.params.id, req.body)
     .then(updated => {
         if (!updated) {
-            res.status(404).json(errorResObj(404, "Document not found."));
+            res.status(404).json(errorResObj(404, "User not found."));
         }
         else {
             res.json(updated);

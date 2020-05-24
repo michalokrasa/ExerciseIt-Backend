@@ -84,6 +84,23 @@ router.get('/', (req, res) => {
         });
 });
 
+// Get one exercise
+router.get('/:id', (req, res) => {
+    Exercise.findById(req.params.id)
+        .populate('user')
+        .then(exercise => {
+            if (!exercise) {
+                res.status(404).json(errorResObj(404, "Exercise not found."));
+                return;
+            }
+            res.json(exercise);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(400).json(errorResObj(400, err.message));
+        });
+});
+
 // Delete one
 router.delete('/', (req, res) => {
     const id = req.body.id;
