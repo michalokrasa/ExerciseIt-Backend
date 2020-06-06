@@ -141,9 +141,9 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete one
-router.delete('/', (req, res) => {
-    const id = req.body.id;
-
+router.delete('/:id', (req, res) => {
+    const id = req.params.id;
+    
     if (!id) {
         res.status(400).json(errorResObj(400, "No id specified in the request body."));
         return;

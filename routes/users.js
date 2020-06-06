@@ -9,7 +9,8 @@ const USERNAME_TAKEN = 11000;
 // Add new user
 router.post('/', (req, res) => {
     const user = new User({
-        username: req.body.username
+        username: req.body.username,
+        password: req.body.password
     });
 
     user.save()
@@ -21,7 +22,7 @@ router.post('/', (req, res) => {
                 res.status(400).json(errorResObj(400, "Username already taken."));
             }
             else {
-                res.status(400).json(err);
+                res.status(400).json(errorResObj(400, err.message));
             }
         });
 });
@@ -33,7 +34,7 @@ router.get('/', (req, res) => {
             res.json(users);
         })
         .catch(err => {
-            res.status(400).json(err.message);
+            res.status(400).json(errorResObj(400, err.message));
         });
 });
 
@@ -48,27 +49,15 @@ router.get('/:id', (req, res) => {
             res.json(user);
         })
         .catch(err => {
-            res.status(400).json(400, err.message);
+            res.status(400).json(errorResObj(400, err.toString()));
         });
 });
 
 // Delete user by id or name
-router.delete('/', (req, res) => {
-    const { id, username } = req.body;
-    let query;
+router.delete('/:id', (req, res) => {
+    const id = req.params.id;
 
-    if (id) {
-        query = User.findByIdAndDelete(id);
-    }
-    else if (username) {
-        query = User.findOneAndDelete({ username });
-    }
-    else {
-        res.status(400).json(errorResObj(400, "No id or username specified in the request body."));
-        return;
-    }
-
-    query
+    User.findByIdAndDelete(id)
         .then(deleted => {
             if (!deleted) {
                 res.status(404).json(errorResObj(404, "Document not found."));
@@ -78,7 +67,7 @@ router.delete('/', (req, res) => {
             }
         })
         .catch(err => {
-            res.status(400).json(err);
+            res.status(400).json(errorResObj(400, err.message));
         });
 });
 
