@@ -29,6 +29,9 @@ app.use('/api/user', userRoutes);
 const exerciseRoutes = require('./routes/exercises');
 app.use('/api/exercise', exerciseRoutes);
 
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 
 app.post('/api/login', (req, res) => {
     // Authenticate user
